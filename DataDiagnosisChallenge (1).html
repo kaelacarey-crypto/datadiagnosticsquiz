@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Diagnosis Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal:        #1B7A78;
+    --teal-mid:    #2D9B96;
+    --teal-light:  #7BBFBD;
+    --teal-pale:   #C8E8E7;
+    --orange:      #E8622A;
+    --orange-light:#F3A87A;
+    --charcoal:    #0D2B2A;
+    --white:       #FFFFFF;
+    --off-white:   #F4F8F8;
+    --muted:       #8AADAC;
+    --correct:     #3DBD7D;
+    --wrong:       #E84B4B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--charcoal);
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: var(--white);
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 50%, rgba(27,122,120,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse at 85% 20%, rgba(232,98,42,0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 60% 80%, rgba(27,122,120,0.12) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* ── HEADER BAR ── */
+  .header-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--teal), var(--teal-mid), var(--orange));
+    z-index: 100;
+  }
+
+  .co-brand {
+    position: fixed;
+    top: 16px; right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    opacity: 0.85;
+  }
+  .co-brand span {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--teal-light);
+    text-transform: uppercase;
+  }
+  .co-brand .divider {
+    width: 1px; height: 20px;
+    background: rgba(123,191,189,0.3);
+  }
+  .co-brand .claravine {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+    letter-spacing: 0;
+  }
+  .co-brand .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #5CB85C;
+    border-radius: 50%;
+    margin-left: 1px;
+    vertical-align: middle;
+  }
+
+  /* ── SCORE BAR ── */
+  .score-bar {
+    position: fixed;
+    top: 12px; left: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 100;
+  }
+  .score-pill {
+    background: rgba(27,122,120,0.25);
+    border: 1px solid rgba(123,191,189,0.3);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal-light);
+    letter-spacing: 0.05em;
+  }
+  .score-pill .num {
+    color: var(--white);
+    font-size: 14px;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 900px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── INTRO SCREEN ── */
+  .intro-eyebrow {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .intro-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 62px);
+    font-weight: 800;
+    line-height: 1.0;
+    text-align: center;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+  .intro-title em {
+    font-style: normal;
+    color: var(--teal-light);
+  }
+  .intro-sub {
+    font-size: 16px;
+    color: var(--muted);
+    text-align: center;
+    max-width: 520px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+  .intro-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 40px;
+  }
+  .intro-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(123,191,189,0.2);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .intro-card .ic-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--teal-light);
+    margin-bottom: 6px;
+  }
+  .intro-card .ic-label {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: 50px;
+    padding: 16px 44px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 24px rgba(232,98,42,0.4);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(232,98,42,0.5);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--teal-light);
+    border: 1px solid rgba(123,191,189,0.4);
+    border-radius: 50px;
+    padding: 12px 28px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 12px;
+  }
+  .btn-secondary:hover {
+    background: rgba(123,191,189,0.1);
+    border-color: var(--teal-light);
+  }
+
+  /* ── QUESTION SCREEN ── */
+  .q-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 28px;
+  }
+  .q-progress-pip {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    transition: background 0.3s;
+  }
+  .q-progress-pip.done { background: var(--teal-mid); }
+  .q-progress-pip.current { background: var(--orange); }
+
+  .q-header {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .q-num-badge {
+    flex-shrink: 0;
+    background: rgba(232,98,42,0.15);
+    border: 1px solid rgba(232,98,42,0.4);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--orange);
+    letter-spacing: 0.1em;
+  }
+
+  /* Timer */
+  .timer-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .timer-ring {
+    width: 44px; height: 44px;
+    flex-shrink: 0;
+  }
+  .timer-ring circle {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transform-origin: center;
+    transform: rotate(-90deg);
+    transition: stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+  .timer-ring .bg  { stroke: rgba(255,255,255,0.08); }
+  .timer-ring .fg  { stroke: var(--teal-light); stroke-dasharray: 113; stroke-dashoffset: 0; }
+  .timer-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--teal-light);
+    transition: color 0.3s;
+    min-width: 22px;
+    text-align: right;
+  }
+  .timer-num.urgent { color: var(--orange); }
+
+  /* THE CLIENT QUOTE */
+  .quote-card {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(123,191,189,0.25);
+    border-left: 4px solid var(--teal-mid);
+    border-radius: 0 16px 16px 0;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .quote-card::before {
+    content: '"';
+    position: absolute;
+    top: -10px; left: 20px;
+    font-size: 100px;
+    font-family: Georgia, serif;
+    color: rgba(123,191,189,0.1);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .quote-eyebrow {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .quote-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .quote-context {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ANSWER OPTIONS */
+  .q-instruction {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+  .option-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(123,191,189,0.2);
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    overflow: hidden;
+  }
+  .option-btn::before {
+    content: attr(data-letter);
+    position: absolute;
+    top: 14px; right: 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+  .option-btn:not(:disabled):hover {
+    background: rgba(27,122,120,0.18);
+    border-color: var(--teal-mid);
+    transform: translateY(-1px);
+  }
+  .option-btn.selected {
+    border-color: var(--teal-mid);
+    background: rgba(27,122,120,0.2);
+  }
+  .option-btn.correct {
+    background: rgba(61,189,125,0.2);
+    border-color: var(--correct);
+    animation: pulse-correct 0.4s ease;
+  }
+  .option-btn.wrong {
+    background: rgba(232,75,75,0.15);
+    border-color: var(--wrong);
+  }
+  .option-btn:disabled { cursor: default; }
+
+  @keyframes pulse-correct {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  /* FEEDBACK & REVEAL */
+  .feedback-bar {
+    width: 100%;
+    margin-top: 20px;
+    border-radius: 12px;
+    padding: 0;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease, padding 0.3s;
+  }
+  .feedback-bar.show {
+    max-height: 500px;
+    padding: 20px 24px;
+  }
+  .feedback-bar.correct-fb {
+    background: rgba(61,189,125,0.12);
+    border: 1px solid rgba(61,189,125,0.3);
+  }
+  .feedback-bar.wrong-fb {
+    background: rgba(232,75,75,0.1);
+    border: 1px solid rgba(232,75,75,0.25);
+  }
+  .fb-verdict {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fb-verdict.ok  { color: var(--correct); }
+  .fb-verdict.bad { color: var(--wrong); }
+  .fb-body { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.6; }
+
+  /* CASE STUDY REVEAL */
+  .case-reveal {
+    width: 100%;
+    margin-top: 16px;
+    background: linear-gradient(135deg, rgba(27,122,120,0.2), rgba(232,98,42,0.08));
+    border: 1px solid rgba(123,191,189,0.3);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+  .case-reveal.show { display: block; }
+  .case-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(232,98,42,0.15);
+    border: 1px solid rgba(232,98,42,0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .case-brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+  .case-desc {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+  .case-claravine {
+    font-size: 12px;
+    color: var(--teal-light);
+    line-height: 1.5;
+    padding-left: 12px;
+    border-left: 2px solid var(--teal-mid);
+  }
+
+  .next-btn-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+
+  /* ── RESULTS SCREEN ── */
+  .results-wrap {
+    text-align: center;
+    max-width: 680px;
+  }
+  .results-score-ring {
+    width: 160px; height: 160px;
+    margin: 0 auto 28px;
+    position: relative;
+  }
+  .results-score-ring svg {
+    width: 100%; height: 100%;
+  }
+  .results-score-ring .score-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .results-score-ring .score-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--white);
+    line-height: 1;
+  }
+  .results-score-ring .score-total {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 10px;
+  }
+  .results-sub {
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+  .results-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+  .rb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(123,191,189,0.15);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: left;
+  }
+  .rb-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .rb-body { flex: 1; }
+  .rb-quote { font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 2px; }
+  .rb-brand { font-size: 11px; color: var(--muted); }
+  .rb-status {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .rb-status.ok  { background: rgba(61,189,125,0.15); color: var(--correct); }
+  .rb-status.bad { background: rgba(232,75,75,0.15); color: var(--wrong); }
+
+  .results-cta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+  .results-cta strong { color: var(--teal-light); }
+
+  /* ── TIME OUT banner ── */
+  .timeout-banner {
+    display: none;
+    width: 100%;
+    background: rgba(232,98,42,0.15);
+    border: 1px solid rgba(232,98,42,0.4);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-top: 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--orange);
+    text-align: center;
+  }
+  .timeout-banner.show { display: block; animation: fadeUp 0.3s ease both; }
+
+  /* streak */
+  .streak-pop {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--orange);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 200;
+  }
+  .streak-pop.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="header-bar"></div>
+
+<div class="co-brand">
+  <span>Transparent Partners</span>
+  <div class="divider"></div>
+  <span class="claravine">claravine<span class="dot"></span></span>
+</div>
+
+<div class="score-bar">
+  <div class="score-pill">Score <span class="num" id="scoreDisplay">0</span></div>
+  <div class="score-pill">Q <span class="num" id="qDisplay">0</span>/3</div>
+</div>
+
+<div class="streak-pop" id="streakPop"></div>
+
+<div id="app">
+
+  <!-- ══ INTRO SCREEN ══════════════════════════════════════════════ -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-eyebrow">Claravine Partner Challenge</div>
+    <h1 class="intro-title">Data <em>Diagnosis</em><br>Challenge</h1>
+    <p class="intro-sub">Can you match what clients are really saying to their true root cause — and the brand story behind it?</p>
+
+    <div class="intro-cards">
+      <div class="intro-card">
+        <div class="ic-num">4</div>
+        <div class="ic-label">Real client<br>pain quotes</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-num">30s</div>
+        <div class="ic-label">Per question<br>to answer</div>
+      </div>
+      <div class="intro-card">
+        <div class="ic-num">4</div>
+        <div class="ic-label">Brand case<br>studies revealed</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="startGame()">Start the Challenge →</button>
+  </div>
+
+  <!-- ══ QUESTION SCREEN ══════════════════════════════════════════ -->
+  <div id="screen-question" class="screen">
+    <!-- Progress pips -->
+    <div class="q-progress" id="progressPips"></div>
+
+    <!-- Header row: Q badge + timer -->
+    <div class="q-header">
+      <div class="q-num-badge" id="qBadge">QUESTION 1 OF 3</div>
+      <div class="timer-wrap">
+        <svg class="timer-ring" viewBox="0 0 40 40">
+          <circle class="bg" cx="20" cy="20" r="18"/>
+          <circle class="fg" id="timerCircle" cx="20" cy="20" r="18"/>
+        </svg>
+        <div class="timer-num" id="timerNum">30</div>
+      </div>
+    </div>
+
+    <!-- The client quote -->
+    <div class="quote-card">
+      <div class="quote-eyebrow">A client just told you…</div>
+      <div class="quote-text" id="quoteText"></div>
+      <div class="quote-context" id="quoteContext"></div>
+    </div>
+
+    <!-- Options -->
+    <div class="q-instruction">What's the REAL root cause? Pick the best answer.</div>
+    <div class="options-grid" id="optionsGrid"></div>
+
+    <!-- Timeout banner -->
+    <div class="timeout-banner" id="timeoutBanner">⏱ Time's up! The answer has been revealed.</div>
+
+    <!-- Feedback -->
+    <div class="feedback-bar" id="feedbackBar">
+      <div class="fb-verdict" id="fbVerdict"></div>
+      <div class="fb-body" id="fbBody"></div>
+    </div>
+
+    <!-- Case study reveal -->
+    <div class="case-reveal" id="caseReveal">
+      <div class="case-tag">📋 Real World Case Study</div>
+      <div class="case-brand" id="caseBrand"></div>
+      <div class="case-desc" id="caseDesc"></div>
+
+    </div>
+
+    <div class="next-btn-wrap">
+      <button class="btn-primary" id="nextBtn" onclick="nextQuestion()" style="display:none">
+        <span id="nextBtnLabel">Next Question →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ RESULTS SCREEN ══════════════════════════════════════════ -->
+  <div id="screen-results" class="screen">
+    <div class="results-wrap">
+      <div class="results-score-ring">
+        <svg viewBox="0 0 160 160">
+          <circle fill="none" cx="80" cy="80" r="70" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+          <circle fill="none" cx="80" cy="80" r="70"
+            stroke="var(--teal-mid)" stroke-width="10"
+            stroke-linecap="round"
+            stroke-dasharray="440"
+            id="resultRing"
+            stroke-dashoffset="440"
+            transform="rotate(-90 80 80)"
+            style="transition: stroke-dashoffset 1.2s ease 0.3s"/>
+        </svg>
+        <div class="score-text">
+          <div class="score-num" id="finalScore">0</div>
+          <div class="score-total">out of 400</div>
+        </div>
+      </div>
+
+      <div class="results-title" id="resultsTitle">Well played!</div>
+      <div class="results-sub" id="resultsSub"></div>
+
+      <div class="results-breakdown" id="breakdown"></div>
+
+      <div class="results-cta">
+        <strong>The pattern shows up in every industry, at every scale.</strong><br><br>
+        Reporting gaps. Dashboard failures. Slow learning cycles. Fragmented insights.<br>
+        They look like different problems — but they share the same root cause:<br><br>
+        <strong>No standardized taxonomy. No data foundation. No governance layer.</strong><br><br>
+        When event capture is inconsistent, when agencies apply their own naming conventions,
+        when campaign metadata isn't structured to a shared schema — data becomes structurally
+        incomparable. You can't aggregate it. You can't trust it. You can't act on it.<br><br>
+        The fix isn't a better dashboard or a faster test — it's establishing
+        <strong>standardized taxonomies and governance at the point of data entry</strong>,
+        so every downstream system speaks the same language.
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:28px; flex-wrap:wrap;">
+        <button class="btn-primary" onclick="resetGame()">Play Again</button>
+        <button class="btn-secondary" onclick="resetGame()">← Back to Start</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  GAME DATA
+// ══════════════════════════════════════════════════════════════════
+
+const QUESTIONS = [
+  {
+    quote: '"We have a reporting problem."',
+    context: 'Senior Marketing Ops lead, global beverage brand',
+    options: [
+      { text: 'The analytics platform is poorly configured and needs a rebuild', letter: 'A' },
+      { text: 'There is no scalable measurement strategy or schema aligned to taxonomy standards — so data can\'t flow into reporting', letter: 'B', correct: true },
+      { text: 'Dashboards aren\'t being updated frequently enough', letter: 'C' },
+      { text: 'The media agency is not sharing raw data files', letter: 'D' },
+    ],
+    feedback: {
+      correct: 'Exactly right. "Reporting problem" is almost always a data foundation problem in disguise.',
+      wrong: 'Not quite. The real issue is upstream — without a schema aligned to taxonomy standards, no amount of dashboard work will fix the root cause.',
+    },
+    explanation: 'The client thinks they have a reporting problem. But the real issue is that their measurement framework has no scalable data foundation — campaign metadata isn\'t structured consistently, so it can\'t power insights at scale.',
+    caseStudy: {
+      brand: 'Heineken',
+      desc: 'Heineken needed a measurement strategy that could deliver insights and reporting at scale across a complex global media mix. The root cause wasn\'t the analytics tools — it was the absence of a schema aligned to taxonomy standards that would make data flow predictably from activation to insight.',
+    }
+  },
+  {
+    quote: '"We need a better dashboard."',
+    context: 'VP of Media Analytics, premium athletic apparel brand',
+    options: [
+      { text: 'Visualizations need to be redesigned in Tableau or Looker', letter: 'A' },
+      { text: 'The BI team is under-resourced and can\'t keep up with requests', letter: 'B' },
+      { text: 'There is no cross-channel campaign taxonomy at different levels of granularity to measure sales impact daily, weekly, and quarterly', letter: 'C', correct: true },
+      { text: 'The attribution model is outdated and needs to be replaced with MTA', letter: 'D' },
+    ],
+    feedback: {
+      correct: 'Spot on. A better dashboard can\'t compensate for misaligned taxonomy — you\'d just be visualizing noise more beautifully.',
+      wrong: 'Close, but the dashboard is just the output. The real problem is the taxonomy that feeds it — without granular, cross-channel standards, no dashboard can answer daily, weekly, and quarterly business questions.',
+    },
+    explanation: 'When a brand says "we need a better dashboard," they usually mean "we need answers." But dashboards only answer questions if the upstream campaign taxonomy supports the right levels of granularity — channel, time period, product line.',
+    caseStudy: {
+      brand: 'lululemon',
+      desc: 'lululemon needed to understand sales impact across channels — but their campaign data lacked the taxonomic structure to support daily, weekly, and quarterly measurement. Different teams used different naming conventions, making cross-channel comparison impossible.',
+    }
+  },
+  {
+    quote: '"We need faster learning cycles."',
+    context: 'Head of Growth Analytics, leading real estate marketplace',
+    options: [
+      { text: 'The A/B testing tool is too slow and needs to be replaced with a faster platform', letter: 'A' },
+      { text: 'There is no standardized event capture across web apps and tools — so experiments can\'t be compared or trusted', letter: 'B', correct: true },
+      { text: 'The data science team doesn\'t have enough headcount to run tests in parallel', letter: 'C' },
+      { text: 'Stakeholder sign-off processes are slowing down experiment launches', letter: 'D' },
+    ],
+    feedback: {
+      correct: 'Exactly. Speed of learning is gated by the quality and consistency of what you\'re measuring — and inconsistent event capture makes every test unreliable.',
+      wrong: 'The bottleneck isn\'t tooling or headcount — it\'s that events are being captured inconsistently across web apps and tools, making it impossible to trust or compare results across experiments.',
+    },
+    explanation: 'When teams say they need faster learning cycles, they usually mean they can\'t act on what they\'re seeing. Without standardized event capture — a shared taxonomy for how interactions are named and tracked across every surface — experiment data is structurally incomparable.',
+    caseStudy: {
+      brand: 'Zillow Group',
+      desc: 'Zillow\'s growth teams were running experiments across multiple web apps and tools, but inconsistent event naming and capture standards meant results couldn\'t be reliably compared. The "speed" problem was actually a data foundations problem — without a standardized event taxonomy, every learning cycle started from scratch.',
+    }
+  },
+  {
+    quote: '"We can\'t get any actionable insights."',
+    context: 'Global CMO office, iconic multi-brand beverage company',
+    options: [
+      { text: 'Data science capability is too limited to extract patterns from raw logs', letter: 'A' },
+      { text: 'Agencies are applying different taxonomies, making cross-agency campaign data impossible to compare or aggregate', letter: 'B', correct: true },
+      { text: 'The measurement partners are using incompatible attribution windows', letter: 'C' },
+      { text: 'Campaign objectives aren\'t being set correctly at the media planning stage', letter: 'D' },
+    ],
+    feedback: {
+      correct: 'Precisely. When 20+ agencies all tag campaigns differently, even the best analytics team is sifting through noise — not signal.',
+      wrong: 'The real culprit is inconsistent agency taxonomy. When each agency partner defines campaigns, markets, and creatives differently, there\'s no common language to generate aggregated insights.',
+    },
+    explanation: 'At enterprise scale — especially with a brand running 200+ campaigns across 20+ markets and multiple agency partners — the absence of a shared taxonomy means data from different sources is structurally incomparable.',
+    caseStudy: {
+      brand: 'The Coca-Cola Company',
+      desc: 'TCCC ran campaigns across 200+ brands and 20+ global markets, each with different agency structures. Agencies were applying inconsistent taxonomies — different naming for the same attributes — making it impossible to compare, aggregate, or extract insights across the portfolio.',
+    }
+  }
+];
+
+// ══════════════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════════════
+
+let state = {
+  currentQ: 0,
+  score: 0,
+  results: [],
+  timer: null,
+  timeLeft: 30,
+  answered: false,
+  streak: 0,
+};
+
+const POINTS_PER_CORRECT = 100;
+const TIME_BONUS_MAX = 50;  // bonus points for speed
+const TIMER_DURATION = 30;
+const CIRCUMFERENCE = 2 * Math.PI * 18; // ~113.1
+
+// ══════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════════════
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  // Reset animation
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = '';
+}
+
+function startGame() {
+  state = { currentQ: 0, score: 0, results: [], timer: null, timeLeft: TIMER_DURATION, answered: false, streak: 0 };
+  updateScoreBar();
+  showScreen('screen-question');
+  loadQuestion();
+}
+
+function resetGame() {
+  showScreen('screen-intro');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  QUESTION LOGIC
+// ══════════════════════════════════════════════════════════════════
+
+function loadQuestion() {
+  const q = QUESTIONS[state.currentQ];
+  state.answered = false;
+  state.timeLeft = TIMER_DURATION;
+
+  // Progress pips
+  const pips = document.getElementById('progressPips');
+  pips.innerHTML = QUESTIONS.map((_, i) => {
+    let cls = 'q-progress-pip';
+    if (i < state.currentQ) cls += ' done';
+    if (i === state.currentQ) cls += ' current';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  // Badge
+  document.getElementById('qBadge').textContent = `QUESTION ${state.currentQ + 1} OF ${QUESTIONS.length}`;
+  document.getElementById('qDisplay').textContent = state.currentQ;
+
+  // Quote
+  document.getElementById('quoteText').textContent = q.quote;
+  document.getElementById('quoteContext').textContent = q.context;
+
+  // Options
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.setAttribute('data-letter', opt.letter);
+    btn.innerHTML = `<strong>${opt.letter}.</strong>&nbsp; ${opt.text}`;
+    btn.onclick = () => selectAnswer(opt.correct === true, btn, opt.letter);
+    grid.appendChild(btn);
+  });
+
+  // Reset feedback
+  const fb = document.getElementById('feedbackBar');
+  fb.className = 'feedback-bar';
+  fb.style.padding = '';
+  document.getElementById('caseReveal').className = 'case-reveal';
+  document.getElementById('timeoutBanner').className = 'timeout-banner';
+  document.getElementById('nextBtn').style.display = 'none';
+
+  // Start timer
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(state.timer);
+  const circle = document.getElementById('timerCircle');
+  const numEl  = document.getElementById('timerNum');
+
+  state.timer = setInterval(() => {
+    state.timeLeft--;
+    const pct = state.timeLeft / TIMER_DURATION;
+    const offset = CIRCUMFERENCE * (1 - pct);
+    circle.style.strokeDashoffset = offset;
+    numEl.textContent = state.timeLeft;
+
+    if (state.timeLeft <= 8) {
+      circle.style.stroke = 'var(--orange)';
+      numEl.classList.add('urgent');
+    }
+
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timer);
+      handleTimeout();
+    }
+  }, 1000);
+}
+
+function handleTimeout() {
+  if (state.answered) return;
+  state.answered = true;
+  state.streak = 0;
+
+  // Mark correct answer
+  const q = QUESTIONS[state.currentQ];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(btn => {
+    btn.disabled = true;
+    const letter = btn.getAttribute('data-letter');
+    const opt = q.options.find(o => o.letter === letter);
+    if (opt && opt.correct) btn.classList.add('correct');
+  });
+
+  document.getElementById('timeoutBanner').classList.add('show');
+
+  state.results.push({ correct: false, timedOut: true });
+  revealCase(q);
+  showNextBtn();
+}
+
+function selectAnswer(isCorrect, btn, letter) {
+  if (state.answered) return;
+  state.answered = true;
+  clearInterval(state.timer);
+
+  const q = QUESTIONS[state.currentQ];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => {
+    b.disabled = true;
+    const l = b.getAttribute('data-letter');
+    const opt = q.options.find(o => o.letter === l);
+    if (opt && opt.correct) b.classList.add('correct');
+  });
+  if (!isCorrect) btn.classList.add('wrong');
+
+  // Points
+  let pts = 0;
+  if (isCorrect) {
+    const timeBonus = Math.round((state.timeLeft / TIMER_DURATION) * TIME_BONUS_MAX);
+    pts = POINTS_PER_CORRECT + timeBonus;
+    state.score += pts;
+    state.streak++;
+    if (state.streak > 1) showStreak(state.streak);
+  } else {
+    state.streak = 0;
+  }
+  state.results.push({ correct: isCorrect, points: pts, quote: q.quote, brand: q.caseStudy.brand });
+
+  // Feedback bar
+  const fb = document.getElementById('feedbackBar');
+  const verdict = document.getElementById('fbVerdict');
+  const body = document.getElementById('fbBody');
+
+  if (isCorrect) {
+    fb.classList.add('show', 'correct-fb');
+    verdict.className = 'fb-verdict ok';
+    verdict.innerHTML = `✓ Correct! +${pts} pts`;
+    body.textContent = q.feedback.correct;
+  } else {
+    fb.classList.add('show', 'wrong-fb');
+    verdict.className = 'fb-verdict bad';
+    verdict.innerHTML = '✗ Not quite.';
+    body.textContent = q.feedback.wrong;
+  }
+
+  updateScoreBar();
+  revealCase(q);
+  showNextBtn();
+}
+
+function revealCase(q) {
+  setTimeout(() => {
+    const cr = document.getElementById('caseReveal');
+    document.getElementById('caseBrand').textContent = q.caseStudy.brand;
+    document.getElementById('caseDesc').textContent = q.caseStudy.desc;
+    cr.classList.add('show');
+  }, 400);
+}
+
+function showNextBtn() {
+  const nb = document.getElementById('nextBtn');
+  const lbl = document.getElementById('nextBtnLabel');
+  nb.style.display = 'block';
+  if (state.currentQ < QUESTIONS.length - 1) {
+    lbl.textContent = 'Next Question →';
+  } else {
+    lbl.textContent = 'See My Results →';
+  }
+}
+
+function nextQuestion() {
+  state.currentQ++;
+  document.getElementById('qDisplay').textContent = state.currentQ;
+  if (state.currentQ >= QUESTIONS.length) {
+    showResults();
+  } else {
+    showScreen('screen-question');
+    loadQuestion();
+  }
+}
+
+function updateScoreBar() {
+  document.getElementById('scoreDisplay').textContent = state.score;
+}
+
+function showStreak(n) {
+  const pop = document.getElementById('streakPop');
+  pop.textContent = `🔥 ${n} in a row! Bonus points!`;
+  pop.classList.add('show');
+  setTimeout(() => pop.classList.remove('show'), 2000);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  RESULTS
+// ══════════════════════════════════════════════════════════════════
+
+function showResults() {
+  showScreen('screen-results');
+
+  const correct = state.results.filter(r => r.correct).length;
+  const total = QUESTIONS.length;
+  const maxScore = QUESTIONS.length * (POINTS_PER_CORRECT + TIME_BONUS_MAX);
+
+  document.getElementById('finalScore').textContent = state.score;
+  // qDisplay updates dynamically from state, no need to hardcode
+
+  // Title + sub
+  const titles = {
+    4: ['Diagnosis Expert! 🏆', 'You nailed every root cause. You\'re ready to lead the conversation with any client.'],
+    3: ['Strong Diagnosis 👏', 'You understand the pattern. Three out of four — nearly there.'],
+    2: ['Getting There 💡', 'The pattern is starting to click. Every "problem" hides a data standards issue underneath.'],
+    1: ['Keep Practicing 🧠', 'The root causes can be counter-intuitive — but once you see the pattern, you can\'t unsee it.'],
+    0: ['Keep Practicing 🧠', 'The root causes can be counter-intuitive — but once you see the pattern, you can\'t unsee it.'],
+  };
+  const [title, sub] = titles[correct] || titles[0];
+  document.getElementById('resultsTitle').textContent = title;
+  document.getElementById('resultsSub').textContent = sub;
+
+  // Ring animation
+  const ring = document.getElementById('resultRing');
+  const pct = state.score / maxScore;
+  setTimeout(() => {
+    ring.style.strokeDashoffset = 440 * (1 - Math.min(pct, 1));
+    ring.style.stroke = correct === total ? 'var(--correct)' : correct > 0 ? 'var(--teal-mid)' : 'var(--wrong)';
+  }, 100);
+
+  // Breakdown
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML = state.results.map((r, i) => {
+    const q = QUESTIONS[i];
+    return `
+      <div class="rb-row">
+        <div class="rb-icon">${r.correct ? '✅' : '❌'}</div>
+        <div class="rb-body">
+          <div class="rb-quote">${q.quote}</div>
+          <div class="rb-brand">${q.caseStudy.brand} · ${r.correct ? '+' + r.points + ' pts' : r.timedOut ? 'Timed out' : '0 pts'}</div>
+        </div>
+        <div class="rb-status ${r.correct ? 'ok' : 'bad'}">${r.correct ? 'Correct' : 'Missed'}</div>
+      </div>
+    `;
+  }).join('');
+}
+</script>
+</body>
+</html>
